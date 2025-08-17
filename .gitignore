@@ -1,0 +1,45 @@
+# 操作系统生成的文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 编辑器和IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 临时文件
+*.tmp
+*.temp
+
+# 日志文件
+*.log
+
+# PDF文件 (通常是生成的文档)
+*.pdf
+PDF/
+
+# 数据目录 (包含可能变化的词汇数据)
+data/
+
+# 依赖目录 (如果将来使用包管理器)
+node_modules/
+.npm
+
+# 构建输出 (如果将来有构建过程)
+dist/
+build/
+
+# 环境变量文件
+.env
+.env.local
+.env.production
+
+# 缓存
+.cache/

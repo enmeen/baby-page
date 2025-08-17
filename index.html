@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Look, say, cover, write, check</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        .worksheet-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 15px;
+            width: 100%;
+            max-width: 210mm; /* A4 宽度 */
+            max-height: 297mm; /* A4 高度 */
+            position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        
+        .worksheet-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 20px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+        
+        .vocabulary-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #f8f9fa;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            table-layout: fixed; /* 固定表格布局以控制列宽 */
+        }
+        
+        /* 设置各列的宽度 */
+        .vocabulary-table th:nth-child(1), .vocabulary-table td:nth-child(1) { width: 8%; }  /* # 列 */
+        .vocabulary-table th:nth-child(2), .vocabulary-table td:nth-child(2) { width: 15%; } /* English 列 */
+        .vocabulary-table th:nth-child(3), .vocabulary-table td:nth-child(3) { width: 15%; } /* 中文 列 */
+        .vocabulary-table th:nth-child(4), .vocabulary-table td:nth-child(4) { width: 20%; } /* Write 1 列 */
+        .vocabulary-table th:nth-child(5), .vocabulary-table td:nth-child(5) { width: 7%; }  /* Check 列 */
+        .vocabulary-table th:nth-child(6), .vocabulary-table td:nth-child(6) { width: 20%; } /* Write 2 列 */
+        .vocabulary-table th:nth-child(7), .vocabulary-table td:nth-child(7) { width: 7%; }  /* Check 列 */
+        .vocabulary-table th:nth-child(8), .vocabulary-table td:nth-child(8) { width: 20%; } /* Write 3 列 */
+        .vocabulary-table th:nth-child(9), .vocabulary-table td:nth-child(9) { width: 7%; }  /* Check 列 */
+        
+        .vocabulary-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 4px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .vocabulary-table td {
+            padding: 8px 4px;
+            text-align: center;
+            font-size: 12px;
+        }
+        
+        /* 交替行背景色 - 斑马纹效果 */
+        .vocabulary-table tbody tr:nth-child(odd) {
+            background-color: #f8f9fa; /* 浅灰色 */
+        }
+        
+        .vocabulary-table tbody tr:nth-child(even) {
+            background-color: #ffffff; /* 白色 */
+        }
+        
+        /* 专门为练习和检查列设置零内间距 */
+        .vocabulary-table td.practice-cell,
+        .vocabulary-table td.check-cell {
+            padding: 0;
+            margin: 0;
+        }
+        
+        .row-number {
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            font-size: 12px;
+        }
+        
+        .english-word {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        
+        .chinese-word {
+            font-weight: bold;
+            color: #e74c3c;
+            font-size: 14px;
+        }
+        
+        .practice-lines {
+            width: 100%;
+            height: 60px;
+            margin: 0;
+            background: transparent; /* 改为透明，继承父元素背景 */
+            position: relative;
+            box-sizing: border-box;
+        }
+        
+        .check-box {
+            width: 100%;
+            height: 60px;
+            margin: 0;
+            background: transparent; /* 改为透明，继承父元素背景 */
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .check-box input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            transform: scale(1.2);
+        }
+        
+        .practice-lines::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                /* 第一条实线 */
+                linear-gradient(to right, #000 0%, #000 100%),
+                /* 第二条实线 */
+                linear-gradient(to right, #000 0%, #000 100%),
+                /* 第三条实线 */
+                linear-gradient(to right, #000 0%, #000 100%),
+                /* 第四条实线 */
+                linear-gradient(to right, #000 0%, #000 100%);
+            background-size: 100% 1px, 100% 1px, 100% 1px, 100% 1px;
+            background-position: 0 12px, 0 24px, 0 36px, 0 48px;
+            background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
+        }
+        
+        .controls {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .score {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        @media print {
+            @page {
+                size: A4;
+                margin: 15mm;
+            }
+            
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+            
+            .worksheet-container {
+                box-shadow: none;
+                border-radius: 0;
+                padding: 0;
+                max-width: none;
+                max-height: none;
+                width: 100%;
+                height: auto;
+            }
+            
+            .worksheet-container::before {
+                display: none;
+            }
+            
+            .header h1 {
+                color: #000;
+                font-size: 18px;
+                margin-bottom: 10px;
+            }
+            
+            .vocabulary-table th {
+                background: #f0f0f0 !important;
+                color: #000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            /* 确保打印时行背景色正确显示 */
+            .vocabulary-table tbody tr:nth-child(odd) {
+                background-color: #f8f9fa !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .vocabulary-table tbody tr:nth-child(even) {
+                background-color: #ffffff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .vocabulary-table tr:hover {
+                background-color: transparent;
+                transform: none;
+            }
+            
+            .check-box input[type="checkbox"] {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .vocabulary-table {
+                font-size: 14px;
+            }
+            
+            .practice-lines,
+            .check-box {
+                height: 45px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="worksheet-container">
+        <div class="header">
+            <h1>Look, say, cover, write, check</h1>
+        </div>
+        
+        <table class="vocabulary-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>English</th>
+                    <th>中文</th>
+                    <th>Write 1</th>
+                    <th>Check</th>
+                    <th>Write 2</th>
+                    <th>Check</th>
+                    <th>Write 3</th>
+                    <th>Check</th>
+                </tr>
+            </thead>
+            <tbody id="vocabularyBody">
+                <!-- Content will be generated by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <script type="module">
+        import { vocabulary } from './data/vocabulary.js';
+
+        function generateTable() {
+            const tbody = document.getElementById('vocabularyBody');
+            tbody.innerHTML = '';
+            
+            vocabulary.forEach((word, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><div class="row-number">${index + 1}</div></td>
+                    <td><span class="english-word">${word.english}</span></td>
+                    <td><span class="chinese-word">${word.chinese}</span></td>
+                    <td class="practice-cell"><div class="practice-lines"></div></td>
+                    <td class="check-cell"><div class="check-box"><input type="checkbox" id="check-${index + 1}-1"></div></td>
+                    <td class="practice-cell"><div class="practice-lines"></div></td>
+                    <td class="check-cell"><div class="check-box"><input type="checkbox" id="check-${index + 1}-2"></div></td>
+                    <td class="practice-cell"><div class="practice-lines"></div></td>
+                    <td class="check-cell"><div class="check-box"><input type="checkbox" id="check-${index + 1}-3"></div></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Initialize the table when page loads
+        generateTable();
+    </script>
+</body>
+</html>
