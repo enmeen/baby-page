@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Look, say, cover, write, check</title>
+    
+    <!-- 引入PDF导出所需的库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -12,13 +17,13 @@
         }
         
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Microsoft YaHei', '微软雅黑', 'Arial', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 10px;
             display: flex;
-            justify-content: center;
-            align-items: flex-start;
+            flex-direction: column;
+            align-items: center;
         }
         
         .worksheet-container {
@@ -34,6 +39,18 @@
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
+            margin-bottom: 20px; /* 页面间距 */
+        }
+        
+        .worksheet-container:last-child {
+            margin-bottom: 0; /* 最后一页不需要下边距 */
+        }
+        
+        .pages-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
         }
         
         .worksheet-container::before {
@@ -163,6 +180,11 @@
             font-weight: bold;
             color: #e74c3c;
             font-size: 14px;
+            font-family: 'PingFang SC', 'Hiragino Sans GB', 'STHeiti', 'Microsoft YaHei', '微软雅黑', 'SimSun', '宋体', Arial, sans-serif;
+            /* 添加字体渲染优化 */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
         }
         
         .practice-lines {
@@ -247,6 +269,46 @@
             color: #2c3e50;
         }
         
+        /* 导出控制按钮样式 */
+        .export-controls {
+            margin: 20px 0;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+            min-width: 140px;
+        }
+        
+        .export-btn:hover {
+            background: linear-gradient(135deg, #229954, #27ae60);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(39, 174, 96, 0.4);
+        }
+        
+        .export-btn:active {
+            transform: translateY(0);
+        }
+        
+        .export-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
         @media print {
             @page {
                 size: A4;
@@ -259,6 +321,11 @@
                 padding: 0;
             }
             
+            .pages-container {
+                margin: 0;
+                padding: 0;
+            }
+            
             .worksheet-container {
                 box-shadow: none;
                 border-radius: 0;
@@ -267,6 +334,13 @@
                 width: 100%;
                 height: 100vh;
                 page-break-inside: avoid;
+                page-break-after: always; /* 强制每页后分页 */
+                margin-bottom: 0;
+                overflow: visible !important; /* 确保内容不被裁剪 */
+            }
+            
+            .worksheet-container:last-child {
+                page-break-after: auto; /* 最后一页不强制分页 */
             }
             
             .worksheet-container::before {
@@ -284,6 +358,61 @@
                 color: #000 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+            }
+            
+            /* 打印时强制设置表格列宽 */
+            .vocabulary-table {
+                table-layout: fixed !important;
+                width: 100% !important;
+            }
+            
+            .vocabulary-table th:nth-child(1), .vocabulary-table td:nth-child(1) { width: 8% !important; }  /* # 列 */
+            .vocabulary-table th:nth-child(2), .vocabulary-table td:nth-child(2) { width: 18% !important; } /* English 列 */
+            .vocabulary-table th:nth-child(3), .vocabulary-table td:nth-child(3) { width: 18% !important; } /* 中文 列 - 增加宽度 */
+            .vocabulary-table th:nth-child(4), .vocabulary-table td:nth-child(4) { width: 18% !important; } /* Write 1 列 */
+            .vocabulary-table th:nth-child(5), .vocabulary-table td:nth-child(5) { width: 6% !important; }  /* Check 列 */
+            .vocabulary-table th:nth-child(6), .vocabulary-table td:nth-child(6) { width: 18% !important; } /* Write 2 列 */
+            .vocabulary-table th:nth-child(7), .vocabulary-table td:nth-child(7) { width: 6% !important; }  /* Check 列 */
+            .vocabulary-table th:nth-child(8), .vocabulary-table td:nth-child(8) { width: 18% !important; } /* Write 3 列 */
+            .vocabulary-table th:nth-child(9), .vocabulary-table td:nth-child(9) { width: 6% !important; }  /* Check 列 */
+            
+            /* 强制显示所有表格单元格内容 */
+            .vocabulary-table td {
+                overflow: visible !important;
+                white-space: nowrap;
+                text-overflow: clip !important;
+            }
+            
+            /* 强制显示所有文本内容 */
+            .vocabulary-table td * {
+                color: #000 !important;
+                font-size: 12px !important;
+                font-weight: bold !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                display: inline !important;
+                visibility: visible !important;
+                font-family: 'PingFang SC', 'Hiragino Sans GB', 'STHeiti', 'Microsoft YaHei', '微软雅黑', 'Times New Roman', Arial, sans-serif !important;
+            }
+            
+            /* 特别强制显示第三列（中文列）的所有内容 */
+            .vocabulary-table td:nth-child(3),
+            .vocabulary-table td:nth-child(3) *,
+            .vocabulary-table td:nth-child(3) span {
+                color: #000 !important;
+                font-size: 14px !important;
+                font-weight: bold !important;
+                font-family: 'PingFang SC', 'Hiragino Sans GB', 'STHeiti', 'Microsoft YaHei', '微软雅黑', 'SimSun', '宋体', Arial, sans-serif !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                display: inline-block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                text-shadow: none !important;
+                background: transparent !important;
+                -webkit-font-smoothing: antialiased !important;
+                -moz-osx-font-smoothing: grayscale !important;
+                text-rendering: optimizeLegibility !important;
             }
             
             /* 确保打印时行背景色正确显示 */
@@ -318,6 +447,28 @@
             .english-word {
                 font-size: 13px !important;
             }
+            
+            .export-controls {
+                display: none; /* 打印时隐藏导出按钮 */
+            }
+            
+            /* 打印时中文样式优化 */
+            .chinese-word {
+                font-size: 14px !important;
+                color: #000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                font-family: 'PingFang SC', 'Hiragino Sans GB', 'STHeiti', 'Microsoft YaHei', '微软雅黑', 'SimSun', '宋体', Arial, sans-serif !important;
+                font-weight: bold !important;
+                display: inline-block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                text-shadow: none !important;
+                -webkit-font-smoothing: antialiased !important;
+                -moz-osx-font-smoothing: grayscale !important;
+                text-rendering: optimizeLegibility !important;
+                font-synthesis: weight style !important;
+            }
         }
         
         @media (max-width: 768px) {
@@ -337,31 +488,18 @@
     </style>
 </head>
 <body>
-    <div class="worksheet-container">
-        <div class="header">
-            <h1>Look, say, cover, write, check</h1>
-        </div>
-        
-        <div class="table-container">
-            <table class="vocabulary-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>English</th>
-                        <th>中文</th>
-                        <th>Write 1</th>
-                        <th>Check</th>
-                        <th>Write 2</th>
-                        <th>Check</th>
-                        <th>Write 3</th>
-                        <th>Check</th>
-                    </tr>
-                </thead>
-                <tbody id="vocabularyBody">
-                    <!-- Content will be generated by JavaScript -->
-            </tbody>
-        </table>
-        </div>
+    <div class="pages-container" id="pagesContainer">
+        <!-- 页面将通过JavaScript动态生成 -->
+    </div>
+
+    <!-- 导出控制按钮 -->
+    <div class="export-controls">
+        <button class="btn export-btn" onclick="exportToPDF()">
+            📄 导出为PDF
+        </button>
+        <button class="btn export-btn" onclick="exportToImage()">
+            🖼️ 导出为图片
+        </button>
     </div>
 
     <script type="module">
@@ -394,20 +532,93 @@
 
         // 显示错误信息
         function showError(message) {
-            const tbody = document.getElementById('vocabularyBody');
-            tbody.innerHTML = `
+            const container = document.getElementById('pagesContainer');
+            container.innerHTML = `
+                <div class="worksheet-container">
+                    <div class="header">
+                        <h1>Look, say, cover, write, check</h1>
+                    </div>
+                    <div class="table-container">
+                        <table class="vocabulary-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>English</th>
+                                    <th>中文</th>
+                                    <th>Write 1</th>
+                                    <th>Check</th>
+                                    <th>Write 2</th>
+                                    <th>Check</th>
+                                    <th>Write 3</th>
+                                    <th>Check</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="9" style="text-align: center; padding: 20px; color: #e74c3c; font-weight: bold;">
+                                        ❌ ${message}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 生成表格头部HTML
+        function generateTableHeader() {
+            return `
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>English</th>
+                        <th>中文</th>
+                        <th>Write 1</th>
+                        <th>Check</th>
+                        <th>Write 2</th>
+                        <th>Check</th>
+                        <th>Write 3</th>
+                        <th>Check</th>
+                    </tr>
+                </thead>
+            `;
+        }
+
+        // 生成单个表格行的HTML
+        function generateTableRow(word, globalIndex, noSymbol) {
+            // 构建英文单词和音标的HTML
+            let englishCell;
+            if (noSymbol || !word.symbol) {
+                // 不显示音标或者没有音标
+                englishCell = `<span class="english-word">${word.english}</span>`;
+            } else {
+                // 显示音标
+                englishCell = `<div class="word-container">
+                     <span class="english-word">${word.english}</span>
+                     <span class="phonetic-symbol">[${word.symbol}]</span>
+                   </div>`;
+            }
+            
+            return `
                 <tr>
-                    <td colspan="9" style="text-align: center; padding: 20px; color: #e74c3c; font-weight: bold;">
-                        ❌ ${message}
-                    </td>
+                    <td><div class="row-number">${globalIndex + 1}</div></td>
+                    <td>${englishCell}</td>
+                    <td><span class="chinese-word">${word.chinese}</span></td>
+                    <td class="practice-cell"><div class="practice-lines"></div></td>
+                    <td class="check-cell"><div class="check-box"><input type="checkbox" id="check-${globalIndex + 1}-1"></div></td>
+                    <td class="practice-cell"><div class="practice-lines"></div></td>
+                    <td class="check-cell"><div class="check-box"><input type="checkbox" id="check-${globalIndex + 1}-2"></div></td>
+                    <td class="practice-cell"><div class="practice-lines"></div></td>
+                    <td class="check-cell"><div class="check-box"><input type="checkbox" id="check-${globalIndex + 1}-3"></div></td>
                 </tr>
             `;
         }
 
         // 生成表格
         function generateTable(vocabulary) {
-            const tbody = document.getElementById('vocabularyBody');
-            tbody.innerHTML = '';
+            const container = document.getElementById('pagesContainer');
+            container.innerHTML = '';
             
             if (!vocabulary || vocabulary.length === 0) {
                 showError('词汇数据为空');
@@ -417,35 +628,55 @@
             // 检查是否隐藏音标
             const noSymbol = getUrlParameter('noSymbol') === 'true';
             
-            vocabulary.forEach((word, index) => {
-                const row = document.createElement('tr');
+            // 每页最多显示的行数
+            const ROWS_PER_PAGE = 17;
+            
+            // 计算需要的页数
+            const totalPages = Math.ceil(vocabulary.length / ROWS_PER_PAGE);
+            
+            // 获取数据文件名用于标题
+            const dataParam = getUrlParameter('data') || 'vocabulary';
+            
+            // 为每页生成表格
+            for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+                const startIndex = pageIndex * ROWS_PER_PAGE;
+                const endIndex = Math.min(startIndex + ROWS_PER_PAGE, vocabulary.length);
+                const pageVocabulary = vocabulary.slice(startIndex, endIndex);
                 
-                // 构建英文单词和音标的HTML
-                let englishCell;
-                if (noSymbol || !word.symbol) {
-                    // 不显示音标或者没有音标
-                    englishCell = `<span class="english-word">${word.english}</span>`;
-                } else {
-                    // 显示音标
-                    englishCell = `<div class="word-container">
-                         <span class="english-word">${word.english}</span>
-                         <span class="phonetic-symbol">[${word.symbol}]</span>
-                       </div>`;
-                }
+                // 创建页面容器
+                const pageContainer = document.createElement('div');
+                pageContainer.className = 'worksheet-container';
                 
-                row.innerHTML = `
-                    <td><div class="row-number">${index + 1}</div></td>
-                    <td>${englishCell}</td>
-                    <td><span class="chinese-word">${word.chinese}</span></td>
-                    <td class="practice-cell"><div class="practice-lines"></div></td>
-                    <td class="check-cell"><div class="check-box"><input type="checkbox" id="check-${index + 1}-1"></div></td>
-                    <td class="practice-cell"><div class="practice-lines"></div></td>
-                    <td class="check-cell"><div class="check-box"><input type="checkbox" id="check-${index + 1}-2"></div></td>
-                    <td class="practice-cell"><div class="practice-lines"></div></td>
-                    <td class="check-cell"><div class="check-box"><input type="checkbox" id="check-${index + 1}-3"></div></td>
+                // 生成表格行HTML
+                let tableRowsHTML = '';
+                pageVocabulary.forEach((word, localIndex) => {
+                    const globalIndex = startIndex + localIndex;
+                    tableRowsHTML += generateTableRow(word, globalIndex, noSymbol);
+                });
+                
+                // 页面标题（如果有多页，显示页码）
+                const pageTitle = totalPages > 1 
+                    ? `Look, say, cover, write, check - ${dataParam} (${pageIndex + 1}/${totalPages})`
+                    : `Look, say, cover, write, check${dataParam !== 'vocabulary' ? ' - ' + dataParam : ''}`;
+                
+                // 设置页面HTML
+                pageContainer.innerHTML = `
+                    <div class="header">
+                        <h1>${pageTitle}</h1>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="vocabulary-table">
+                            ${generateTableHeader()}
+                            <tbody>
+                                ${tableRowsHTML}
+                            </tbody>
+                        </table>
+                    </div>
                 `;
-                tbody.appendChild(row);
-            });
+                
+                container.appendChild(pageContainer);
+            }
         }
 
         // 更新页面标题
@@ -465,13 +696,25 @@
         // 初始化应用
         async function initApp() {
             // 显示加载状态
-            const tbody = document.getElementById('vocabularyBody');
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="9" style="text-align: center; padding: 20px; color: #667eea;">
-                        📚 正在加载词汇数据...
-                    </td>
-                </tr>
+            const container = document.getElementById('pagesContainer');
+            container.innerHTML = `
+                <div class="worksheet-container">
+                    <div class="header">
+                        <h1>Look, say, cover, write, check</h1>
+                    </div>
+                    <div class="table-container">
+                        <table class="vocabulary-table">
+                            ${generateTableHeader()}
+                            <tbody>
+                                <tr>
+                                    <td colspan="9" style="text-align: center; padding: 20px; color: #667eea;">
+                                        📚 正在加载词汇数据...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             `;
 
             // 更新标题
@@ -484,6 +727,141 @@
 
         // 页面加载完成后初始化
         initApp();
+        
+        // 导出为PDF功能
+        window.exportToPDF = async function() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = '🔄 生成PDF中...';
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pages = document.querySelectorAll('.worksheet-container');
+                
+                for (let i = 0; i < pages.length; i++) {
+                    const page = pages[i];
+                    
+                    // 临时修改样式以优化PDF渲染
+                    const originalStyles = {
+                        background: page.style.background,
+                        boxShadow: page.style.boxShadow,
+                        borderRadius: page.style.borderRadius,
+                        margin: page.style.margin
+                    };
+                    
+                    // 设置PDF渲染友好的样式
+                    page.style.background = 'white';
+                    page.style.boxShadow = 'none';
+                    page.style.borderRadius = '0';
+                    page.style.margin = '0';
+                    
+                    // 生成canvas
+                    const canvas = await html2canvas(page, {
+                        scale: 2, // 提高分辨率
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: '#ffffff',
+                        width: page.offsetWidth,
+                        height: page.offsetHeight,
+                        windowWidth: page.offsetWidth,
+                        windowHeight: page.offsetHeight
+                    });
+                    
+                    // 恢复原始样式
+                    Object.keys(originalStyles).forEach(key => {
+                        if (originalStyles[key]) {
+                            page.style[key] = originalStyles[key];
+                        }
+                    });
+                    
+                    // 添加到PDF
+                    if (i > 0) {
+                        pdf.addPage();
+                    }
+                    
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = pdf.internal.pageSize.getHeight();
+                    
+                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                }
+                
+                // 获取文件名
+                const dataParam = getUrlParameter('data') || 'vocabulary';
+                const fileName = `worksheet-${dataParam}-${new Date().toISOString().slice(0,10)}.pdf`;
+                
+                // 下载PDF
+                pdf.save(fileName);
+                
+            } catch (error) {
+                console.error('PDF导出失败:', error);
+                alert('PDF导出失败，请重试');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📄 导出为PDF';
+            }
+        };
+        
+        // 导出为图片功能
+        window.exportToImage = async function() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = '🔄 生成图片中...';
+            
+            try {
+                const pages = document.querySelectorAll('.worksheet-container');
+                const dataParam = getUrlParameter('data') || 'vocabulary';
+                
+                for (let i = 0; i < pages.length; i++) {
+                    const page = pages[i];
+                    
+                    // 临时修改样式以优化图片渲染
+                    const originalStyles = {
+                        background: page.style.background,
+                        boxShadow: page.style.boxShadow,
+                        borderRadius: page.style.borderRadius,
+                        margin: page.style.margin
+                    };
+                    
+                    // 设置图片渲染友好的样式
+                    page.style.background = 'white';
+                    page.style.boxShadow = 'none';
+                    page.style.borderRadius = '0';
+                    page.style.margin = '0';
+                    
+                    // 生成canvas
+                    const canvas = await html2canvas(page, {
+                        scale: 2, // 提高分辨率
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: '#ffffff',
+                        width: page.offsetWidth,
+                        height: page.offsetHeight
+                    });
+                    
+                    // 恢复原始样式
+                    Object.keys(originalStyles).forEach(key => {
+                        if (originalStyles[key]) {
+                            page.style[key] = originalStyles[key];
+                        }
+                    });
+                    
+                    // 下载图片
+                    const link = document.createElement('a');
+                    link.download = `worksheet-${dataParam}-page${i + 1}-${new Date().toISOString().slice(0,10)}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                }
+                
+            } catch (error) {
+                console.error('图片导出失败:', error);
+                alert('图片导出失败，请重试');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🖼️ 导出为图片';
+            }
+        };
     </script>
 </body>
 </html>
