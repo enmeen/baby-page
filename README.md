@@ -31,8 +31,9 @@
 
 ### URL参数说明
 
-使用 `data` 参数来指定词汇文件：
+支持以下URL参数来定制显示：
 
+#### data 参数 - 指定词汇文件
 ```
 http://localhost:8000?data=词汇文件名
 ```
@@ -41,8 +42,21 @@ http://localhost:8000?data=词汇文件名
 - `?data=vocabulary1` - 加载 `data/vocabulary1.js`
 - `?data=vocabulary2` - 加载 `data/vocabulary2.js`
 - `?data=vocabulary3` - 加载 `data/vocabulary3.js`
+- `?data=utit1` - 加载 `data/utit1.js`
 
-如果不指定参数，默认加载 `data/vocabulary.js`
+#### noSymbol 参数 - 隐藏音标
+```
+http://localhost:8000?noSymbol=true
+```
+
+当设置为 `true` 时，不显示音标符号，适合初学者或专注于单词拼写的练习。
+
+#### 组合使用
+```
+http://localhost:8000?data=utit1&noSymbol=true
+```
+
+如果不指定参数，默认加载 `data/vocabulary.js` 并显示音标。
 
 ### 文件结构
 
