@@ -5,11 +5,13 @@
 ## 功能特点
 
 - 📝 英语单词练习表格生成
-- 🖨️ 优化的A4打印布局
+- � 国际音标显示支持
+- �🖨️ 优化的A4打印布局
 - ✅ 带复选框的检查功能
 - 🎨 交替行背景便于阅读
 - 📱 响应式设计支持移动设备
 - 🏗️ 模块化ES6架构
+- 🔗 URL参数动态加载词汇
 
 ## 使用方法
 
@@ -20,8 +22,27 @@
    ```bash
    ./start-server.sh
    ```
-3. 在浏览器中打开 `http://localhost:8000`
+3. 在浏览器中打开对应的URL：
+   - 默认词汇：`http://localhost:8000`
+   - 动物主题：`http://localhost:8000?data=vocabulary1`
+   - 食物主题：`http://localhost:8000?data=vocabulary2`
+   - 颜色主题：`http://localhost:8000?data=vocabulary3`
 4. 点击浏览器的打印功能进行打印
+
+### URL参数说明
+
+使用 `data` 参数来指定词汇文件：
+
+```
+http://localhost:8000?data=词汇文件名
+```
+
+例如：
+- `?data=vocabulary1` - 加载 `data/vocabulary1.js`
+- `?data=vocabulary2` - 加载 `data/vocabulary2.js`
+- `?data=vocabulary3` - 加载 `data/vocabulary3.js`
+
+如果不指定参数，默认加载 `data/vocabulary.js`
 
 ### 文件结构
 
@@ -37,14 +58,30 @@ baby-page/
 
 ### 自定义词汇
 
-编辑 `data/vocabulary.js` 文件来添加或修改词汇：
+在 `data/` 目录下创建新的词汇文件，格式如下：
 
 ```javascript
+// data/vocabulary4.js - 自定义主题词汇
 export const vocabulary = [
-    { english: 'word', chinese: '单词' },
+    { english: 'word1', symbol: 'wɜːrd', chinese: '单词1' },
+    { english: 'word2', symbol: 'wɜːrd', chinese: '单词2' },
     // 添加更多词汇...
 ];
 ```
+
+字段说明：
+- `english`: 英文单词
+- `symbol`: 国际音标（可选，如果不提供则不显示音标）
+- `chinese`: 中文释义
+
+然后通过URL访问：`http://localhost:8000?data=vocabulary4`
+
+### 现有词汇主题
+
+- `vocabulary` (默认) - 综合词汇
+- `vocabulary1` - 动物主题
+- `vocabulary2` - 食物主题  
+- `vocabulary3` - 颜色主题
 
 ## 学习方法
 

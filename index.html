@@ -131,6 +131,22 @@
             font-weight: bold;
             color: #2c3e50;
             font-size: 14px;
+            margin-bottom: 2px;
+        }
+        
+        .phonetic-symbol {
+            font-size: 13px;
+            color: #555;
+            font-style: normal;
+            font-family: 'Times New Roman', serif; /* 使用支持国际音标的字体 */
+            font-weight: 500;
+        }
+        
+        .word-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
         }
         
         .chinese-word {
@@ -282,6 +298,16 @@
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
+            
+            /* 打印时音标样式优化 */
+            .phonetic-symbol {
+                font-size: 12px !important;
+                color: #333 !important;
+            }
+            
+            .english-word {
+                font-size: 13px !important;
+            }
         }
         
         @media (max-width: 768px) {
@@ -327,17 +353,69 @@
     </div>
 
     <script type="module">
-        import { vocabulary } from './data/vocabulary.js';
+        // 获取URL参数
+        function getUrlParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
 
-        function generateTable() {
+        // 动态导入词汇数据
+        async function loadVocabulary() {
+            try {
+                // 从URL参数获取数据文件名，默认为 'vocabulary'
+                const dataParam = getUrlParameter('data') || 'vocabulary';
+                
+                // 构建文件路径
+                const filePath = `./data/${dataParam}.js`;
+                
+                // 动态导入模块
+                const module = await import(filePath);
+                return module.vocabulary;
+            } catch (error) {
+                console.error('Failed to load vocabulary data:', error);
+                
+                // 如果加载失败，显示错误信息
+                showError(`无法加载词汇文件。请确保文件存在：data/${getUrlParameter('data') || 'vocabulary'}.js`);
+                return [];
+            }
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            const tbody = document.getElementById('vocabularyBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 20px; color: #e74c3c; font-weight: bold;">
+                        ❌ ${message}
+                    </td>
+                </tr>
+            `;
+        }
+
+        // 生成表格
+        function generateTable(vocabulary) {
             const tbody = document.getElementById('vocabularyBody');
             tbody.innerHTML = '';
             
+            if (!vocabulary || vocabulary.length === 0) {
+                showError('词汇数据为空');
+                return;
+            }
+            
             vocabulary.forEach((word, index) => {
                 const row = document.createElement('tr');
+                
+                // 构建英文单词和音标的HTML
+                const englishCell = word.symbol 
+                    ? `<div class="word-container">
+                         <span class="english-word">${word.english}</span>
+                         <span class="phonetic-symbol">[${word.symbol}]</span>
+                       </div>`
+                    : `<span class="english-word">${word.english}</span>`;
+                
                 row.innerHTML = `
                     <td><div class="row-number">${index + 1}</div></td>
-                    <td><span class="english-word">${word.english}</span></td>
+                    <td>${englishCell}</td>
                     <td><span class="chinese-word">${word.chinese}</span></td>
                     <td class="practice-cell"><div class="practice-lines"></div></td>
                     <td class="check-cell"><div class="check-box"><input type="checkbox" id="check-${index + 1}-1"></div></td>
@@ -350,8 +428,42 @@
             });
         }
 
-        // Initialize the table when page loads
-        generateTable();
+        // 更新页面标题
+        function updateTitle() {
+            const dataParam = getUrlParameter('data');
+            if (dataParam) {
+                document.title = `Look, say, cover, write, check - ${dataParam}`;
+                
+                // 更新页面标题显示
+                const headerTitle = document.querySelector('.header h1');
+                if (headerTitle) {
+                    headerTitle.textContent = `Look, say, cover, write, check - ${dataParam}`;
+                }
+            }
+        }
+
+        // 初始化应用
+        async function initApp() {
+            // 显示加载状态
+            const tbody = document.getElementById('vocabularyBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 20px; color: #667eea;">
+                        📚 正在加载词汇数据...
+                    </td>
+                </tr>
+            `;
+
+            // 更新标题
+            updateTitle();
+            
+            // 加载词汇数据并生成表格
+            const vocabulary = await loadVocabulary();
+            generateTable(vocabulary);
+        }
+
+        // 页面加载完成后初始化
+        initApp();
     </script>
 </body>
 </html>
