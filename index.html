@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Look, say, cover, write, check</title>
     
+    <!-- 预加载自定义字体 -->
+    <link rel="preload" href="./public/RileysonRg-Italic.ttf" as="font" type="font/ttf" crossorigin>
+    
     <!-- 引入PDF导出所需的库 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -30,7 +33,7 @@
             background: white;
             border-radius: 15px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            padding: 15px;
+            padding: 20px 15px; /* 增加上下padding */
             width: 100%;
             max-width: 210mm; /* A4 宽度 */
             height: 297mm; /* 固定A4 高度 */
@@ -65,20 +68,21 @@
         
         .header {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 25px; /* 增加标题底部间距 */
             flex-shrink: 0; /* 防止header被压缩 */
+            padding-top: 10px; /* 增加标题顶部间距 */
         }
         
         .header h1 {
             color: #2c3e50;
-            font-size: 20px;
-            margin-bottom: 5px;
+            font-size: 24px; /* 增大标题字体 */
+            margin-bottom: 8px; /* 增加标题和副标题间距 */
             font-weight: bold;
         }
         
         .header p {
             color: #7f8c8d;
-            font-size: 16px;
+            font-size: 18px; /* 增大副标题字体 */
         }
         
         .table-container {
@@ -86,6 +90,7 @@
             display: flex;
             flex-direction: column;
             min-height: 0; /* 允许flex子元素缩小 */
+            padding-bottom: 15px; /* 增加表格底部空间 */
         }
         
         .vocabulary-table {
@@ -112,14 +117,14 @@
         .vocabulary-table th {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            padding: 8px 4px;
+            padding: 6px 4px;  /* 减少上下padding以节省空间 */
             text-align: center;
             font-weight: bold;
             font-size: 12px;
         }
         
         .vocabulary-table td {
-            padding: 8px 4px;
+            padding: 4px 4px;  /* 减少上下padding以节省空间 */
             text-align: center;
             font-size: 12px;
         }
@@ -612,8 +617,8 @@
             // 检查是否隐藏音标（已移除音标功能）
             // const noSymbol = getUrlParameter('noSymbol') === 'true';
             
-            // 每页最多显示的行数
-            const ROWS_PER_PAGE = 17;
+            // 每页最多显示的行数 - 根据四线格高度调整
+            const ROWS_PER_PAGE = 15;
             
             // 计算需要的页数
             const totalPages = Math.ceil(vocabulary.length / ROWS_PER_PAGE);
