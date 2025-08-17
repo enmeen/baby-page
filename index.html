@@ -161,14 +161,6 @@
             margin-bottom: 2px;
         }
         
-        .phonetic-symbol {
-            font-size: 13px;
-            color: #555;
-            font-style: normal;
-            font-family: 'Times New Roman', serif; /* 使用支持国际音标的字体 */
-            font-weight: 500;
-        }
-        
         .word-container {
             display: flex;
             flex-direction: column;
@@ -438,11 +430,7 @@
                 print-color-adjust: exact;
             }
             
-            /* 打印时音标样式优化 */
-            .phonetic-symbol {
-                font-size: 12px !important;
-                color: #333 !important;
-            }
+            /* 打印时音标样式优化 - 已移除 */
             
             .english-word {
                 font-size: 13px !important;
@@ -503,6 +491,12 @@
     </div>
 
     <script type="module">
+        // 引入四线格生成器
+        import { initFourLineStyles, generateFourLineWordHTML } from './four-line-generator.js';
+        
+        // 初始化四线格样式
+        initFourLineStyles();
+        
         // 获取URL参数
         function getUrlParameter(name) {
             const urlParams = new URLSearchParams(window.location.search);
@@ -586,19 +580,9 @@
         }
 
         // 生成单个表格行的HTML
-        function generateTableRow(word, globalIndex, noSymbol) {
-            // 构建英文单词和音标的HTML
-            let englishCell;
-            if (noSymbol || !word.symbol) {
-                // 不显示音标或者没有音标
-                englishCell = `<span class="english-word">${word.english}</span>`;
-            } else {
-                // 显示音标
-                englishCell = `<div class="word-container">
-                     <span class="english-word">${word.english}</span>
-                     <span class="phonetic-symbol">[${word.symbol}]</span>
-                   </div>`;
-            }
+        function generateTableRow(word, globalIndex) {
+            // 使用四线格生成英文单词
+            const englishCell = generateFourLineWordHTML(word.english);
             
             return `
                 <tr>
@@ -625,8 +609,8 @@
                 return;
             }
             
-            // 检查是否隐藏音标
-            const noSymbol = getUrlParameter('noSymbol') === 'true';
+            // 检查是否隐藏音标（已移除音标功能）
+            // const noSymbol = getUrlParameter('noSymbol') === 'true';
             
             // 每页最多显示的行数
             const ROWS_PER_PAGE = 17;
@@ -651,7 +635,7 @@
                 let tableRowsHTML = '';
                 pageVocabulary.forEach((word, localIndex) => {
                     const globalIndex = startIndex + localIndex;
-                    tableRowsHTML += generateTableRow(word, globalIndex, noSymbol);
+                    tableRowsHTML += generateTableRow(word, globalIndex);
                 });
                 
                 // 页面标题（如果有多页，显示页码）
