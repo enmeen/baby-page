@@ -166,12 +166,57 @@ app.post('/parse-vocabulary', async (req, res) => {
     }
 });
 
+// 智能解析词汇表数据 - 文件上传版本
+app.post('/parse-vocabulary-upload', upload.single('pdf'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: '请上传PDF文件' });
+        }
+
+        const filePath = req.file.path;
+        
+        // 读取并解析PDF
+        const dataBuffer = await fs.readFile(filePath);
+        const data = await pdfParse(dataBuffer);
+        const extractedText = data.text;
+
+        if (!extractedText) {
+            return res.status(400).json({ error: '无法从PDF中提取文本内容' });
+        }
+
+        // 解析词汇表数据
+        const vocabulary = parseVocabularyFromText(extractedText);
+
+        res.json({
+            success: true,
+            vocabulary: vocabulary,
+            totalWords: vocabulary.length,
+            originalName: req.file.originalname,
+            savedPath: req.file.path,
+            rawText: extractedText
+        });
+
+    } catch (error) {
+        console.error('解析上传文件词汇表时出错:', error);
+        res.status(500).json({ 
+            error: '解析失败', 
+            details: error.message 
+        });
+    }
+});
+
 // 解析词汇表文本的函数
 function parseVocabularyFromText(text) {
     const vocabulary = [];
     const lines = text.split('\n').filter(line => line.trim());
     
-    // 常见的词汇表格式模式
+    // 首先尝试解析超级单词表格式
+    const superVocabulary = parseSuperVocabularyFormat(text);
+    if (superVocabulary.length > 0) {
+        return superVocabulary;
+    }
+    
+    // 如果超级单词表格式解析失败，尝试传统格式
     const patterns = [
         // 格式: "单词 /音标/ 中文翻译"
         /^([a-zA-Z]+)\s*[\/\[\(]([^\/\]\)]+)[\/\]\)]\s*(.+)$/,
@@ -230,6 +275,77 @@ function parseVocabularyFromText(text) {
     }
     
     return vocabulary;
+}
+
+// 解析超级单词表格式的函数
+function parseSuperVocabularyFormat(text) {
+    const vocabulary = [];
+    const lines = text.split('\n').filter(line => line.trim());
+    
+    let currentWord = null;
+    let i = 0;
+    
+    while (i < lines.length) {
+        const line = lines[i].trim();
+        
+        // 跳过标题行和分隔符
+        if (line.includes('超级单词表') || line.includes('单词翻译') || 
+            line.includes('1/2') || line.includes('2/2') || !line) {
+            i++;
+            continue;
+        }
+        
+        // 检测英文单词（通常是行首的英文）
+        if (/^[a-zA-Z\s]+$/.test(line) && !line.includes('[') && 
+            !line.includes('n.') && !line.includes('v.') && 
+            !line.includes('adj.') && !line.includes('adv.') &&
+            !line.includes('prep.') && !line.includes('phrase.') &&
+            !line.includes('int.')) {
+            
+            if (currentWord && currentWord.english && currentWord.chinese) {
+                vocabulary.push(currentWord);
+            }
+            currentWord = { 
+                english: line.toLowerCase().trim(), 
+                symbol: '', 
+                chinese: '' 
+            };
+        } 
+        // 检测音标
+        else if (line.includes('[') && line.includes(']')) {
+            if (currentWord) {
+                const symbolMatch = line.match(/\[([^\]]+)\]/);
+                if (symbolMatch) {
+                    currentWord.symbol = symbolMatch[1];
+                }
+            }
+        }
+        // 检测中文翻译
+        else if (/[\u4e00-\u9fff]/.test(line)) {
+            if (currentWord) {
+                // 清理中文内容，移除英文语法标记
+                let chinese = line.replace(/^(n\.|v\.|adj\.|adv\.|prep\.|phrase\.|int\.)\s*/, '');
+                chinese = chinese.replace(/；$/, ''); // 移除末尾分号
+                currentWord.chinese = chinese.trim();
+            }
+        }
+        
+        i++;
+    }
+    
+    // 添加最后一个单词
+    if (currentWord && currentWord.english && currentWord.chinese) {
+        vocabulary.push(currentWord);
+    }
+    
+    // 清理vocabulary，移除symbol为空的字段
+    return vocabulary.map(word => {
+        if (word.symbol) {
+            return word;
+        } else {
+            return { english: word.english, chinese: word.chinese };
+        }
+    });
 }
 
 // 生成vocabulary.js文件
@@ -314,6 +430,7 @@ app.listen(PORT, () => {
     console.log('  POST /extract-local - 提取本地PDF文本');
     console.log('  POST /extract-upload - 上传并提取PDF文本');
     console.log('  POST /parse-vocabulary - 解析词汇表数据');
+    console.log('  POST /parse-vocabulary-upload - 上传PDF解析词汇表数据');
     console.log('  POST /generate-vocabulary-file - 生成vocabulary.js文件');
 });
 

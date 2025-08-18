@@ -147,35 +147,6 @@
         .vocab-chinese {
             color: #28a745;
         }
-        
-        /* 格式化按钮样式 */
-        .format-section {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 15px;
-        }
-        
-        .format-button {
-            background: #28a745 !important;
-            color: white !important;
-            border: none !important;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-        
-        .format-button:hover {
-            background: #218838 !important;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
-        }
-        
-        .unit-name-input {
-            width: 200px !important;
-            display: inline-block !important;
-            margin-left: 10px;
-        }
     </style>
 </head>
 <body>
@@ -198,17 +169,6 @@
             </div>
             <button onclick="extractLocalPDF()" id="extractLocalBtn">提取文本</button>
             <div id="localResult" class="result" style="display: none;"></div>
-            
-            <!-- 格式化功能 -->
-            <div id="localFormatSection" class="format-section" style="display: none;">
-                <button onclick="formatToUnit('localResult')" id="formatLocalBtn" class="format-button">
-                    📝 格式化为Unit格式
-                </button>
-                <div style="margin-top: 10px;">
-                    <label for="localUnitName">Unit名称:</label>
-                    <input type="text" id="localUnitName" placeholder="unit11" value="unit11" class="unit-name-input">
-                </div>
-            </div>
         </div>
         
         <!-- 文件上传标签页 -->
@@ -220,27 +180,29 @@
             </div>
             <button onclick="uploadAndExtract()" id="uploadBtn">上传并提取</button>
             <div id="uploadResult" class="result" style="display: none;"></div>
-            
-            <!-- 格式化功能 -->
-            <div id="uploadFormatSection" class="format-section" style="display: none;">
-                <button onclick="formatToUnit('uploadResult')" id="formatUploadBtn" class="format-button">
-                    📝 格式化为Unit格式
-                </button>
-                <div style="margin-top: 10px;">
-                    <label for="uploadUnitName">Unit名称:</label>
-                    <input type="text" id="uploadUnitName" placeholder="unit11" value="unit11" class="unit-name-input">
-                </div>
-            </div>
         </div>
         
         <!-- 词汇解析标签页 -->
         <div id="vocabulary" class="tab-content">
             <h2>解析词汇表数据</h2>
+            
+            <!-- 文件上传方式 -->
+            <div class="form-group">
+                <label for="vocabFile">上传PDF文件 (推荐):</label>
+                <input type="file" id="vocabFile" accept=".pdf">
+            </div>
+            
+            <!-- 或者文件路径方式 -->
+            <div style="text-align: center; margin: 15px 0; color: #6c757d; font-style: italic;">
+                ——— 或者 ———
+            </div>
+            
             <div class="form-group">
                 <label for="vocabFilePath">文件路径:</label>
                 <input type="text" id="vocabFilePath" 
                        placeholder="/Users/desen/mine/Personal project/baby-page/PDF/Unit1 音素拆分 带音标-翻译.pdf">
             </div>
+            
             <div class="form-group">
                 <label for="vocabFileName">生成文件名:</label>
                 <input type="text" id="vocabFileName" placeholder="unit1" value="unit1">
@@ -311,11 +273,8 @@
 提取的文本内容:
 ${data.text}`;
                     showResult('localResult', result, 'success');
-                    // 显示格式化按钮
-                    document.getElementById('localFormatSection').style.display = 'block';
                 } else {
                     showResult('localResult', `错误: ${data.error}`, 'error');
-                    document.getElementById('localFormatSection').style.display = 'none';
                 }
             } catch (error) {
                 showResult('localResult', `请求失败: ${error.message}`, 'error');
@@ -359,11 +318,8 @@ ${data.text}`;
 提取的文本内容:
 ${data.text}`;
                     showResult('uploadResult', result, 'success');
-                    // 显示格式化按钮
-                    document.getElementById('uploadFormatSection').style.display = 'block';
                 } else {
                     showResult('uploadResult', `错误: ${data.error}`, 'error');
-                    document.getElementById('uploadFormatSection').style.display = 'none';
                 }
             } catch (error) {
                 showResult('uploadResult', `请求失败: ${error.message}`, 'error');
@@ -375,12 +331,17 @@ ${data.text}`;
         
         // 解析词汇表
         async function parseVocabulary() {
+            const fileInput = document.getElementById('vocabFile');
             const filePath = document.getElementById('vocabFilePath').value.trim();
             const fileName = document.getElementById('vocabFileName').value.trim() || 'unit1';
             const btn = document.getElementById('vocabBtn');
             
-            if (!filePath) {
-                showResult('vocabResult', '请输入文件路径', 'error');
+            // 检查是否有文件上传或文件路径
+            const hasUploadFile = fileInput.files.length > 0;
+            const hasFilePath = filePath.length > 0;
+            
+            if (!hasUploadFile && !hasFilePath) {
+                showResult('vocabResult', '请上传PDF文件或输入文件路径', 'error');
                 return;
             }
             
@@ -389,14 +350,28 @@ ${data.text}`;
             showResult('vocabResult', '正在解析词汇表数据，请稍候...', 'loading');
             
             try {
-                // 1. 解析词汇表
-                const parseResponse = await fetch(`${API_BASE}/parse-vocabulary`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ filePath })
-                });
+                let parseResponse;
+                
+                // 优先使用上传文件
+                if (hasUploadFile) {
+                    // 使用文件上传方式
+                    const formData = new FormData();
+                    formData.append('pdf', fileInput.files[0]);
+                    
+                    parseResponse = await fetch(`${API_BASE}/parse-vocabulary-upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                } else {
+                    // 使用文件路径方式
+                    parseResponse = await fetch(`${API_BASE}/parse-vocabulary`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ filePath })
+                    });
+                }
                 
                 const parseData = await parseResponse.json();
                 
@@ -420,7 +395,12 @@ ${data.text}`;
                 const generateData = await generateResponse.json();
                 
                 if (generateData.success) {
+                    const sourceInfo = hasUploadFile ? 
+                        `上传文件: ${fileInput.files[0].name}` : 
+                        `文件路径: ${filePath}`;
+                    
                     const result = `✅ 解析成功！
+${sourceInfo}
 文件保存路径: ${generateData.path}
 词汇数量: ${generateData.wordCount}
 
@@ -464,128 +444,6 @@ ${generateData.content}`;
             });
             
             container.innerHTML = html;
-        }
-        
-        // 格式化文本为Unit格式
-        async function formatToUnit(resultElementId) {
-            const resultElement = document.getElementById(resultElementId);
-            const text = resultElement.textContent;
-            
-            // 根据结果元素ID确定单位名称输入框
-            let unitNameInputId;
-            if (resultElementId === 'localResult') {
-                unitNameInputId = 'localUnitName';
-            } else if (resultElementId === 'uploadResult') {
-                unitNameInputId = 'uploadUnitName';
-            }
-            
-            const unitName = document.getElementById(unitNameInputId).value.trim() || 'unit11';
-            
-            try {
-                // 提取"提取的文本内容:"后面的内容
-                const textContent = text.split('提取的文本内容:')[1]?.trim();
-                if (!textContent) {
-                    alert('未找到可提取的文本内容');
-                    return;
-                }
-                
-                const formattedCode = parseTextToUnitFormat(textContent, unitName);
-                
-                // 复制到剪贴板
-                await navigator.clipboard.writeText(formattedCode);
-                
-                // 显示成功消息
-                alert(`✅ 已成功格式化为 ${unitName}.js 格式并复制到剪贴板！\n\n包含 ${formattedCode.split('\n').filter(line => line.trim().includes('english:')).length} 个单词`);
-                
-            } catch (error) {
-                console.error('格式化失败:', error);
-                alert('格式化失败: ' + error.message);
-            }
-        }
-        
-        // 解析文本为Unit格式
-        function parseTextToUnitFormat(text, unitName) {
-            const lines = text.split('\n').filter(line => line.trim());
-            const vocabulary = [];
-            
-            let currentWord = null;
-            let i = 0;
-            
-            while (i < lines.length) {
-                const line = lines[i].trim();
-                
-                // 跳过标题行和分隔符
-                if (line.includes('超级单词表') || line.includes('单词翻译') || line.includes('1/2') || line.includes('2/2') || !line) {
-                    i++;
-                    continue;
-                }
-                
-                // 检测英文单词（通常是行首的英文）
-                if (/^[a-zA-Z\s]+$/.test(line) && !line.includes('[') && !line.includes('n.') && !line.includes('v.') && !line.includes('adj.')) {
-                    if (currentWord) {
-                        vocabulary.push(currentWord);
-                    }
-                    currentWord = { english: line.toLowerCase().trim(), symbol: '', chinese: '' };
-                } 
-                // 检测音标
-                else if (line.includes('[') && line.includes(']')) {
-                    if (currentWord) {
-                        const symbolMatch = line.match(/\[([^\]]+)\]/);
-                        if (symbolMatch) {
-                            currentWord.symbol = symbolMatch[1];
-                        }
-                    }
-                }
-                // 检测中文翻译
-                else if (/[\u4e00-\u9fff]/.test(line)) {
-                    if (currentWord) {
-                        // 清理中文内容，移除英文语法标记
-                        let chinese = line.replace(/^(n\.|v\.|adj\.|adv\.|prep\.|phrase\.|int\.)\s*/, '');
-                        currentWord.chinese = chinese.trim();
-                    }
-                }
-                
-                i++;
-            }
-            
-            // 添加最后一个单词
-            if (currentWord) {
-                vocabulary.push(currentWord);
-            }
-            
-            // 生成代码
-            const themeDescription = getThemeDescription(unitName);
-            let code = `// ${unitName}.js - 超级单词表词汇数据模块${themeDescription}\nexport const vocabulary = [\n`;
-            
-            vocabulary.forEach((word, index) => {
-                const isLast = index === vocabulary.length - 1;
-                if (word.symbol) {
-                    code += `    { english: '${word.english}', symbol: '${word.symbol}', chinese: '${word.chinese}' }${isLast ? '' : ','}\n`;
-                } else {
-                    code += `    { english: '${word.english}', chinese: '${word.chinese}' }${isLast ? '' : ','}\n`;
-                }
-            });
-            
-            code += '];';
-            return code;
-        }
-        
-        // 根据unit名称生成主题描述
-        function getThemeDescription(unitName) {
-            const themes = {
-                'unit1': '（家庭成员主题）',
-                'unit2': '（动物主题）', 
-                'unit3': '（颜色主题）',
-                'unit4': '（海洋与服装主题）',
-                'unit5': '（动物栖息地主题）',
-                'unit6': '（动物保护与时间主题）',
-                'unit7': '（天气与季节主题）',
-                'unit8': '（季节活动与休闲主题）',
-                'unit9': '（数学与学习用品主题）',
-                'unit10': '（食物与烹饪主题）'
-            };
-            
-            return themes[unitName] || '（综合主题）';
         }
         
         // 页面加载时检查服务状态
