@@ -511,15 +511,38 @@
         // 动态导入词汇数据
         async function loadVocabulary() {
             try {
-                // 从URL参数获取数据文件名，默认为 'vocabulary'
+                // 从URL参数获取数据文件名，支持多个unit用逗号分隔
                 const dataParam = getUrlParameter('data') || 'vocabulary';
+                const unitNames = dataParam.split(',').map(name => name.trim());
                 
-                // 构建文件路径
-                const filePath = `./data/${dataParam}.js`;
+                // 加载所有词汇文件
+                const allVocabularyData = [];
                 
-                // 动态导入模块
-                const module = await import(filePath);
-                return module.vocabulary;
+                for (const unitName of unitNames) {
+                    try {
+                        // 构建文件路径
+                        const filePath = `./data/${unitName}.js`;
+                        
+                        // 动态导入模块
+                        const module = await import(filePath);
+                        
+                        // 添加unit信息到词汇数据
+                        allVocabularyData.push({
+                            unitName: unitName,
+                            vocabulary: module.vocabulary || []
+                        });
+                    } catch (error) {
+                        console.warn(`Failed to load ${unitName}:`, error);
+                        // 如果某个unit加载失败，添加错误信息
+                        allVocabularyData.push({
+                            unitName: unitName,
+                            vocabulary: [],
+                            error: `无法加载文件: data/${unitName}.js`
+                        });
+                    }
+                }
+                
+                return allVocabularyData;
             } catch (error) {
                 console.error('Failed to load vocabulary data:', error);
                 
@@ -585,99 +608,187 @@
         }
 
         // 生成单个表格行的HTML
-        function generateTableRow(word, globalIndex) {
+        function generateTableRow(word, localIndex, unitData = null, unitIndex = 0) {
             // 使用四线格生成英文单词
             const englishCell = generateFourLineWordHTML(word.english);
             
+            // 计算行号 - 对于多unit模式，每个unit从1开始编号
+            const rowNumber = localIndex + 1;
+            
+            // 生成唯一的checkbox ID
+            const checkboxId = unitData ? 
+                `${unitData.unitName}-${localIndex + 1}` : 
+                `${localIndex + 1}`;
+            
             return `
                 <tr>
-                    <td><div class="row-number">${globalIndex + 1}</div></td>
+                    <td><div class="row-number">${rowNumber}</div></td>
                     <td>${englishCell}</td>
                     <td><span class="chinese-word">${word.chinese}</span></td>
                     <td class="practice-cell"><div class="practice-lines"></div></td>
-                    <td class="check-cell"><div class="check-box"><input type="checkbox" id="check-${globalIndex + 1}-1"></div></td>
+                    <td class="check-cell"><div class="check-box"><input type="checkbox" id="check-${checkboxId}-1"></div></td>
                     <td class="practice-cell"><div class="practice-lines"></div></td>
-                    <td class="check-cell"><div class="check-box"><input type="checkbox" id="check-${globalIndex + 1}-2"></div></td>
+                    <td class="check-cell"><div class="check-box"><input type="checkbox" id="check-${checkboxId}-2"></div></td>
                     <td class="practice-cell"><div class="practice-lines"></div></td>
-                    <td class="check-cell"><div class="check-box"><input type="checkbox" id="check-${globalIndex + 1}-3"></div></td>
+                    <td class="check-cell"><div class="check-box"><input type="checkbox" id="check-${checkboxId}-3"></div></td>
                 </tr>
             `;
         }
 
         // 生成表格
-        function generateTable(vocabulary) {
+        function generateTable(allVocabularyData) {
             const container = document.getElementById('pagesContainer');
             container.innerHTML = '';
             
-            if (!vocabulary || vocabulary.length === 0) {
+            if (!allVocabularyData || allVocabularyData.length === 0) {
                 showError('词汇数据为空');
                 return;
             }
             
-            // 检查是否隐藏音标（已移除音标功能）
-            // const noSymbol = getUrlParameter('noSymbol') === 'true';
-            
-            // 每页最多显示的行数 - 根据四线格高度调整
+            // 每页最多显示的行数
             const ROWS_PER_PAGE = 16;
-            
-            // 计算需要的页数
-            const totalPages = Math.ceil(vocabulary.length / ROWS_PER_PAGE);
             
             // 获取数据文件名用于标题
             const dataParam = getUrlParameter('data') || 'vocabulary';
+            const unitNames = dataParam.split(',').map(name => name.trim());
             
-            // 为每页生成表格
-            for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
-                const startIndex = pageIndex * ROWS_PER_PAGE;
-                const endIndex = Math.min(startIndex + ROWS_PER_PAGE, vocabulary.length);
-                const pageVocabulary = vocabulary.slice(startIndex, endIndex);
+            let globalPageIndex = 0; // 全局页面计数器
+            
+            // 为每个unit生成独立的表格
+            allVocabularyData.forEach((unitData, unitIndex) => {
+                const { unitName, vocabulary, error } = unitData;
                 
-                // 创建页面容器
-                const pageContainer = document.createElement('div');
-                pageContainer.className = 'worksheet-container';
+                if (error) {
+                    // 如果有错误，显示错误页面
+                    const errorContainer = document.createElement('div');
+                    errorContainer.className = 'worksheet-container';
+                    errorContainer.innerHTML = `
+                        <div class="header">
+                            <h1>Look, say, cover, write, check - ${unitName}</h1>
+                        </div>
+                        <div class="table-container">
+                            <table class="vocabulary-table">
+                                ${generateTableHeader()}
+                                <tbody>
+                                    <tr>
+                                        <td colspan="9" style="text-align: center; padding: 20px; color: #e74c3c; font-weight: bold;">
+                                            ❌ ${error}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    container.appendChild(errorContainer);
+                    return;
+                }
                 
-                // 生成表格行HTML
-                let tableRowsHTML = '';
-                pageVocabulary.forEach((word, localIndex) => {
-                    const globalIndex = startIndex + localIndex;
-                    tableRowsHTML += generateTableRow(word, globalIndex);
-                });
+                if (!vocabulary || vocabulary.length === 0) {
+                    // 如果词汇为空，显示空数据页面
+                    const emptyContainer = document.createElement('div');
+                    emptyContainer.className = 'worksheet-container';
+                    emptyContainer.innerHTML = `
+                        <div class="header">
+                            <h1>Look, say, cover, write, check - ${unitName}</h1>
+                        </div>
+                        <div class="table-container">
+                            <table class="vocabulary-table">
+                                ${generateTableHeader()}
+                                <tbody>
+                                    <tr>
+                                        <td colspan="9" style="text-align: center; padding: 20px; color: #f39c12; font-weight: bold;">
+                                            📝 ${unitName} 暂无词汇数据
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    container.appendChild(emptyContainer);
+                    return;
+                }
                 
-                // 页面标题（如果有多页，显示页码）
-                const pageTitle = totalPages > 1 
-                    ? `Look, say, cover, write, check - ${dataParam} (${pageIndex + 1}/${totalPages})`
-                    : `Look, say, cover, write, check${dataParam !== 'vocabulary' ? ' - ' + dataParam : ''}`;
+                // 计算当前unit需要的页数
+                const unitPages = Math.ceil(vocabulary.length / ROWS_PER_PAGE);
                 
-                // 设置页面HTML
-                pageContainer.innerHTML = `
-                    <div class="header">
-                        <h1>${pageTitle}</h1>
-                    </div>
+                // 为当前unit的每页生成表格
+                for (let pageIndex = 0; pageIndex < unitPages; pageIndex++) {
+                    globalPageIndex++;
                     
-                    <div class="table-container">
-                        <table class="vocabulary-table">
-                            ${generateTableHeader()}
-                            <tbody>
-                                ${tableRowsHTML}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-                
-                container.appendChild(pageContainer);
-            }
+                    const startIndex = pageIndex * ROWS_PER_PAGE;
+                    const endIndex = Math.min(startIndex + ROWS_PER_PAGE, vocabulary.length);
+                    const pageVocabulary = vocabulary.slice(startIndex, endIndex);
+                    
+                    // 创建页面容器
+                    const pageContainer = document.createElement('div');
+                    pageContainer.className = 'worksheet-container';
+                    
+                    // 生成表格行HTML
+                    let tableRowsHTML = '';
+                    pageVocabulary.forEach((word, localIndex) => {
+                        const globalIndex = startIndex + localIndex;
+                        tableRowsHTML += generateTableRow(word, globalIndex, unitData, unitIndex);
+                    });
+                    
+                    // 页面标题
+                    let pageTitle;
+                    if (unitNames.length > 1) {
+                        // 多unit模式
+                        if (unitPages > 1) {
+                            pageTitle = `Look, say, cover, write, check - ${unitName} (${pageIndex + 1}/${unitPages}) - Table ${globalPageIndex}`;
+                        } else {
+                            pageTitle = `Look, say, cover, write, check - ${unitName} - Table ${globalPageIndex}`;
+                        }
+                    } else {
+                        // 单unit模式（保持原有逻辑）
+                        if (unitPages > 1) {
+                            pageTitle = `Look, say, cover, write, check - ${unitName} (${pageIndex + 1}/${unitPages})`;
+                        } else {
+                            pageTitle = `Look, say, cover, write, check${unitName !== 'vocabulary' ? ' - ' + unitName : ''}`;
+                        }
+                    }
+                    
+                    // 设置页面HTML
+                    pageContainer.innerHTML = `
+                        <div class="header">
+                            <h1>${pageTitle}</h1>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table class="vocabulary-table">
+                                ${generateTableHeader()}
+                                <tbody>
+                                    ${tableRowsHTML}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    
+                    container.appendChild(pageContainer);
+                }
+            });
         }
 
         // 更新页面标题
         function updateTitle() {
             const dataParam = getUrlParameter('data');
             if (dataParam) {
-                document.title = `Look, say, cover, write, check - ${dataParam}`;
+                // 支持多个unit的标题显示
+                const unitNames = dataParam.split(',').map(name => name.trim());
+                if (unitNames.length > 1) {
+                    document.title = `Look, say, cover, write, check - ${unitNames.join(', ')}`;
+                } else {
+                    document.title = `Look, say, cover, write, check - ${dataParam}`;
+                }
                 
-                // 更新页面标题显示
+                // 更新页面标题显示（会在后续生成表格时被具体页面覆盖）
                 const headerTitle = document.querySelector('.header h1');
                 if (headerTitle) {
-                    headerTitle.textContent = `Look, say, cover, write, check - ${dataParam}`;
+                    if (unitNames.length > 1) {
+                        headerTitle.textContent = `Look, say, cover, write, check - ${unitNames.join(', ')}`;
+                    } else {
+                        headerTitle.textContent = `Look, say, cover, write, check - ${dataParam}`;
+                    }
                 }
             }
         }
@@ -710,8 +821,8 @@
             updateTitle();
             
             // 加载词汇数据并生成表格
-            const vocabulary = await loadVocabulary();
-            generateTable(vocabulary);
+            const allVocabularyData = await loadVocabulary();
+            generateTable(allVocabularyData);
         }
 
         // 页面加载完成后初始化
@@ -778,7 +889,10 @@
                 
                 // 获取文件名
                 const dataParam = getUrlParameter('data') || 'vocabulary';
-                const fileName = `worksheet-${dataParam}-${new Date().toISOString().slice(0,10)}.pdf`;
+                const unitNames = dataParam.split(',').map(name => name.trim());
+                const fileName = unitNames.length > 1 
+                    ? `worksheet-${unitNames.join('-')}-${new Date().toISOString().slice(0,10)}.pdf`
+                    : `worksheet-${dataParam}-${new Date().toISOString().slice(0,10)}.pdf`;
                 
                 // 下载PDF
                 pdf.save(fileName);
@@ -801,6 +915,7 @@
             try {
                 const pages = document.querySelectorAll('.worksheet-container');
                 const dataParam = getUrlParameter('data') || 'vocabulary';
+                const unitNames = dataParam.split(',').map(name => name.trim());
                 
                 for (let i = 0; i < pages.length; i++) {
                     const page = pages[i];
@@ -838,7 +953,10 @@
                     
                     // 下载图片
                     const link = document.createElement('a');
-                    link.download = `worksheet-${dataParam}-page${i + 1}-${new Date().toISOString().slice(0,10)}.png`;
+                    const fileName = unitNames.length > 1 
+                        ? `worksheet-${unitNames.join('-')}-page${i + 1}-${new Date().toISOString().slice(0,10)}.png`
+                        : `worksheet-${dataParam}-page${i + 1}-${new Date().toISOString().slice(0,10)}.png`;
+                    link.download = fileName;
                     link.href = canvas.toDataURL('image/png');
                     link.click();
                 }
