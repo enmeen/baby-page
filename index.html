@@ -104,15 +104,14 @@
         }
         
         /* 设置各列的宽度 */
-        .vocabulary-table th:nth-child(1), .vocabulary-table td:nth-child(1) { width: 8%; }  /* # 列 */
-        .vocabulary-table th:nth-child(2), .vocabulary-table td:nth-child(2) { width: 15%; } /* English 列 */
-        .vocabulary-table th:nth-child(3), .vocabulary-table td:nth-child(3) { width: 15%; } /* 中文 列 */
-        .vocabulary-table th:nth-child(4), .vocabulary-table td:nth-child(4) { width: 20%; } /* Write 1 列 */
-        .vocabulary-table th:nth-child(5), .vocabulary-table td:nth-child(5) { width: 7%; }  /* Check 列 */
-        .vocabulary-table th:nth-child(6), .vocabulary-table td:nth-child(6) { width: 20%; } /* Write 2 列 */
-        .vocabulary-table th:nth-child(7), .vocabulary-table td:nth-child(7) { width: 7%; }  /* Check 列 */
-        .vocabulary-table th:nth-child(8), .vocabulary-table td:nth-child(8) { width: 20%; } /* Write 3 列 */
-        .vocabulary-table th:nth-child(9), .vocabulary-table td:nth-child(9) { width: 7%; }  /* Check 列 */
+        .vocabulary-table th:nth-child(1), .vocabulary-table td:nth-child(1) { width: 28%; } /* English 列 - 扩展宽度（原22% + 序列号6%） */
+        .vocabulary-table th:nth-child(2), .vocabulary-table td:nth-child(2) { width: 13%; } /* 中文 列 */
+        .vocabulary-table th:nth-child(3), .vocabulary-table td:nth-child(3) { width: 17%; } /* Write 1 列 */
+        .vocabulary-table th:nth-child(4), .vocabulary-table td:nth-child(4) { width: 4%; }  /* Check 列 - 减少宽度 */
+        .vocabulary-table th:nth-child(5), .vocabulary-table td:nth-child(5) { width: 17%; } /* Write 2 列 */
+        .vocabulary-table th:nth-child(6), .vocabulary-table td:nth-child(6) { width: 4%; }  /* Check 列 - 减少宽度 */
+        .vocabulary-table th:nth-child(7), .vocabulary-table td:nth-child(7) { width: 17%; } /* Write 3 列 */
+        .vocabulary-table th:nth-child(8), .vocabulary-table td:nth-child(8) { width: 4%; }  /* Check 列 - 减少宽度 */
         
         .vocabulary-table th {
             background: linear-gradient(135deg, #667eea, #764ba2);
@@ -205,10 +204,10 @@
         }
         
         .check-box input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
             cursor: pointer;
-            transform: scale(1.2);
+            transform: scale(1.0);
         }
         
         .practice-lines::before {
@@ -564,20 +563,19 @@
                         <table class="vocabulary-table">
                             <thead>
                                 <tr>
-                                    <th>#</th>
                                     <th>English</th>
                                     <th>中文</th>
                                     <th>Write 1</th>
-                                    <th>Check</th>
+                                    <th>✓</th>
                                     <th>Write 2</th>
-                                    <th>Check</th>
+                                    <th>✓</th>
                                     <th>Write 3</th>
-                                    <th>Check</th>
+                                    <th>✓</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="9" style="text-align: center; padding: 20px; color: #e74c3c; font-weight: bold;">
+                                    <td colspan="8" style="text-align: center; padding: 20px; color: #e74c3c; font-weight: bold;">
                                         ❌ ${message}
                                     </td>
                                 </tr>
@@ -593,15 +591,14 @@
             return `
                 <thead>
                     <tr>
-                        <th>#</th>
                         <th>English</th>
                         <th>中文</th>
                         <th>Write 1</th>
-                        <th>Check</th>
+                        <th>✓</th>
                         <th>Write 2</th>
-                        <th>Check</th>
+                        <th>✓</th>
                         <th>Write 3</th>
-                        <th>Check</th>
+                        <th>✓</th>
                     </tr>
                 </thead>
             `;
@@ -612,9 +609,6 @@
             // 使用四线格生成英文单词
             const englishCell = generateFourLineWordHTML(word.english);
             
-            // 计算行号 - 对于多unit模式，每个unit从1开始编号
-            const rowNumber = localIndex + 1;
-            
             // 生成唯一的checkbox ID
             const checkboxId = unitData ? 
                 `${unitData.unitName}-${localIndex + 1}` : 
@@ -622,7 +616,6 @@
             
             return `
                 <tr>
-                    <td><div class="row-number">${rowNumber}</div></td>
                     <td>${englishCell}</td>
                     <td><span class="chinese-word">${word.chinese}</span></td>
                     <td class="practice-cell"><div class="practice-lines"></div></td>
@@ -671,7 +664,7 @@
                                 ${generateTableHeader()}
                                 <tbody>
                                     <tr>
-                                        <td colspan="9" style="text-align: center; padding: 20px; color: #e74c3c; font-weight: bold;">
+                                        <td colspan="8" style="text-align: center; padding: 20px; color: #e74c3c; font-weight: bold;">
                                             ❌ ${error}
                                         </td>
                                     </tr>
@@ -696,7 +689,7 @@
                                 ${generateTableHeader()}
                                 <tbody>
                                     <tr>
-                                        <td colspan="9" style="text-align: center; padding: 20px; color: #f39c12; font-weight: bold;">
+                                        <td colspan="8" style="text-align: center; padding: 20px; color: #f39c12; font-weight: bold;">
                                             📝 ${unitName} 暂无词汇数据
                                         </td>
                                     </tr>
@@ -807,7 +800,7 @@
                             ${generateTableHeader()}
                             <tbody>
                                 <tr>
-                                    <td colspan="9" style="text-align: center; padding: 20px; color: #667eea;">
+                                    <td colspan="8" style="text-align: center; padding: 20px; color: #667eea;">
                                         📚 正在加载词汇数据...
                                     </td>
                                 </tr>
