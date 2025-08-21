@@ -39,7 +39,7 @@ export function getFourLineStyles() {
         .four-line-word-container {
             position: relative;
             width: 100%;
-            height: 45px;  /* 进一步减少高度以适应A4页面 */
+            height: 60px;  /* 与Write列保持一致的高度 */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -68,10 +68,10 @@ export function getFourLineStyles() {
                 100% 1px,
                 100% 1px;
             background-position: 
-                0 2px,   /* 顶线 */
-                0 15px,  /* 上中线 */
-                0 27px,  /* 基线 */
-                0 40px;  /* 底线 */
+                0 12px,  /* 顶线 - 与Write列对齐 */
+                0 24px,  /* 上中线 - 与Write列对齐 */
+                0 36px,  /* 基线 - 与Write列对齐 */
+                0 48px;  /* 底线 - 与Write列对齐 */
             background-repeat: no-repeat;
             pointer-events: none;
         }
@@ -91,7 +91,7 @@ export function getFourLineStyles() {
             
             /* 确保文字坐在基线上，上升字母能延伸到顶线 */
             position: absolute;
-            top: 10px;  /* 向下调整位置使单词更好地对齐基线 */
+            top: 18px;  /* 调整位置使单词更好地对齐新的基线（36px） */
             left: 0;
             right: 0;
             height: 24px;  /* 稍微增加高度适应手写字体 */
@@ -108,7 +108,7 @@ export function getFourLineStyles() {
         /* 打印时的四线格样式优化 */
         @media print {
             .four-line-word-container {
-                height: 45px !important;  /* 保持一致的高度 */
+                height: 60px !important;  /* 与屏幕显示保持一致的高度 */
                 page-break-inside: avoid;
             }
             
@@ -119,10 +119,10 @@ export function getFourLineStyles() {
                     linear-gradient(to right, #000 0%, #000 100%),
                     linear-gradient(to right, #666 0%, #666 100%) !important;
                 background-position: 
-                    0 2px,   /* 顶线 */
-                    0 15px,  /* 上中线 */
-                    0 27px,  /* 基线 - 加粗 */
-                    0 40px !important;  /* 底线 */
+                    0 12px,  /* 顶线 - 与Write列对齐 */
+                    0 24px,  /* 上中线 - 与Write列对齐 */
+                    0 36px,  /* 基线 - 加粗，与Write列对齐 */
+                    0 48px !important;  /* 底线 - 与Write列对齐 */
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }

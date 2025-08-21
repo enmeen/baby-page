@@ -68,9 +68,8 @@
         
         .header {
             text-align: center;
-            margin-bottom: 25px; /* 增加标题底部间距 */
+            margin-bottom: 10px; /* 增加标题底部间距 */
             flex-shrink: 0; /* 防止header被压缩 */
-            padding-top: 10px; /* 增加标题顶部间距 */
         }
         
         .header h1 {
@@ -197,7 +196,7 @@
             text-rendering: optimizeLegibility;
             /* 绝对定位到单元格底部 */
             position: absolute;
-            bottom: 5px;
+            bottom: 0;
             left: 50%;
             transform: translateX(-50%);
             white-space: nowrap; /* 防止换行 */
@@ -659,7 +658,7 @@
             }
             
             // 每页最多显示的行数
-            const ROWS_PER_PAGE = 16;
+            const ROWS_PER_PAGE = 15;
             
             // 获取数据文件名用于标题
             const dataParam = getUrlParameter('data') || 'vocabulary';
