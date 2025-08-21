@@ -55,13 +55,13 @@ export function getFourLineStyles() {
             bottom: 0;
             background-image: 
                 /* 顶线 */
-                linear-gradient(to right, #ccc 0%, #ccc 100%),
+                linear-gradient(to right, #bbb 0%, #bbb 100%),
                 /* 上中线 */
-                linear-gradient(to right, #999 0%, #999 100%),
+                linear-gradient(to right, #bbb 0%, #bbb 100%),
                 /* 基线（下中线）*/
-                linear-gradient(to right, #333 0%, #333 100%),
+                linear-gradient(to right, #bbb 0%, #bbb 100%),
                 /* 底线 */
-                linear-gradient(to right, #ccc 0%, #ccc 100%);
+                linear-gradient(to right, #bbb 0%, #bbb 100%);
             background-size: 
                 100% 1px,
                 100% 1px,
